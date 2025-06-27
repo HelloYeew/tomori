@@ -1,10 +1,10 @@
 # Tomori Framework
 
-A graphic framework for making basic UI application and 2D game (right now) target to support much platform as possible. Backed by .NET.
+A graphic framework for making basic UI application and 2D game (right now) target to support as many platforms as possible. Backed by .NET.
 
 ## Use this framework
 
-See [sample game repository](https://github.com/HelloYeew/tomori-sample-game) for example.
+See [sample app repository](https://github.com/HelloYeew/tomori-sample-app) for example.
 
 ## License
 
