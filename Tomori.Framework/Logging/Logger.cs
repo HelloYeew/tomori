@@ -16,7 +16,7 @@ public class Logger
 {
     private static readonly ConcurrentQueue<LogMessage> message_queue = new ConcurrentQueue<LogMessage>();
     private static readonly ConcurrentDictionary<LoggingTarget, StreamWriter> file_writers = new ConcurrentDictionary<LoggingTarget, StreamWriter>();
-    private static readonly object console_lock = new object();  // Lock for console output to not mutate concurrently
+    private static readonly Lock console_lock = new Lock();  // Lock for console output to not mutate concurrently
 
     private static Task? processingTask;
     private static CancellationTokenSource? cancellationTokenSource;
@@ -123,7 +123,7 @@ public class Logger
     #endregion
 
     /// <summary>
-    /// Initialize tge logger, creates the log directory if it does not exist, and starts the background processing task.
+    /// Initialize the logger, creates the log directory if it does not exist, and starts the background processing task.
     /// <remarks>This method should be called once at application startup. <see cref="AppIdentifier"/> and <see cref="VersionIdentifier"/> should be set before calling this.</remarks>
     /// </summary>
     /// <param name="logPath">The base directory where log files will be stored. If null or empty, defaults to "logs".</param>
@@ -230,9 +230,7 @@ public class Logger
         {
             lock (console_lock)
             {
-                Console.ForegroundColor = getLogLevelColor(logMessage.Level);
                 Console.WriteLine(formattedMessage);
-                Console.ResetColor();
             }
         }
 
@@ -275,17 +273,6 @@ public class Logger
     }
 
     private static string getLogLevelPrefix(LogLevel level) => level == LogLevel.Debug ? "verbose" : level.ToString().ToLower();
-
-    private static ConsoleColor getLogLevelColor(LogLevel level) =>
-        level switch
-        {
-            LogLevel.Debug => ConsoleColor.DarkGray,
-            LogLevel.Verbose => ConsoleColor.White,
-            LogLevel.Warning => ConsoleColor.Yellow,
-            LogLevel.Error => ConsoleColor.Red,
-            LogLevel.Fatal => ConsoleColor.Magenta,
-            _ => ConsoleColor.White
-        };
 }
 
 /// <summary>
