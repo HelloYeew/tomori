@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using JetBrains.Annotations;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
+using Tomori.Framework.Logging;
 
 namespace Tomori.Framework.Platform;
 
@@ -39,11 +40,17 @@ public abstract class AppHost : IDisposable
 
     public void Run(App app)
     {
+        Logger.AppIdentifier = Name;
+        Logger.Initialize();
 
+        foreach (var path in UserStoragePaths)
+        {
+            Logger.Verbose($"User storage path: {path}");
+        }
     }
 
     public void Dispose()
     {
-        // TODO release managed resources here
+        Logger.Shutdown();
     }
 }
