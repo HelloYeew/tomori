@@ -12,6 +12,8 @@ namespace Tomori.Framework.Platform;
 
 public abstract class AppHost : IDisposable
 {
+    public IWindow Window { get; private set; }
+
     [NotNull]
     public HostOptions Options { get; private set; }
 
