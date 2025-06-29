@@ -146,9 +146,39 @@ public class Logger
             Directory.CreateDirectory(logDirectory);
         }
 
+        clearOldLogs();
+
         cancellationTokenSource = new CancellationTokenSource();
 
         processingTask = Task.Run(() => processLogQueue(cancellationTokenSource.Token));
+    }
+
+    /// <summary>
+    /// Clears old log files that are older than the specified retention days.
+    /// </summary>
+    /// <param name="retentionDays"></param>
+    private static void clearOldLogs(int retentionDays = 7)
+    {
+        if (!Directory.Exists(logDirectory)) return;
+
+        string[] files = Directory.GetFiles(logDirectory, "*.log");
+        var threshold = DateTime.UtcNow.AddDays(-retentionDays);
+
+        foreach (string file in files)
+        {
+            try
+            {
+                var lastWriteTime = File.GetLastWriteTimeUtc(file);
+                if (lastWriteTime < threshold)
+                {
+                    File.Delete(file);
+                }
+            }
+            catch (Exception ex)
+            {
+                Error($"Failed to delete log file {file}", ex);
+            }
+        }
     }
 
     /// <summary>
@@ -212,7 +242,16 @@ public class Logger
             }
             else
             {
-                await Task.Delay(10, token).ConfigureAwait(false);
+                try
+                {
+                    await Task.Delay(10, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // This is expected when shutdown is called and the queue is empty.
+                    // Exit the loop.
+                    break;
+                }
             }
         }
     }
