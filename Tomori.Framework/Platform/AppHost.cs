@@ -1,6 +1,8 @@
 // This code is part of the Tomori framework project. Licensed under the MIT License.
 // See the LICENSE file for full license text.
 
+#nullable disable
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -44,8 +46,10 @@ public abstract class AppHost : IDisposable
     {
         Logger.AppIdentifier = Name;
         Logger.Initialize();
+        // TODO: Testing purpose only, will remove later.
+        Logger.Verbose($"Starting {Options.FriendlyAppName}...");
 
-        foreach (var path in UserStoragePaths)
+        foreach (string path in UserStoragePaths)
         {
             Logger.Verbose($"User storage path: {path}");
         }
