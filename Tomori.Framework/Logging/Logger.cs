@@ -120,6 +120,19 @@ public class Logger
     /// <param name="target">The target to write the log message to</param>
     public static void Fatal(string message, Exception ex, LoggingTarget target = LoggingTarget.Runtime) => log($"{message}\n{ex}", LogLevel.Fatal, target);
 
+    /// <summary>
+    /// Log a message to the logger with a specified <see cref="LogLevel"/> and <see cref="LoggingTarget"/>, also prints it to the debug output if in a debug build.
+    /// </summary>
+    /// <param name="message"> The message to log.</param>
+    /// <param name="level"> The log level of the message. Default is <see cref="LogLevel.Verbose"/>.</param>
+    /// <param name="target"> The target to write the log message to. Default is <see cref="LoggingTarget.Runtime"/>.</param>
+    public static void LogPrint(string message, LogLevel level = LogLevel.Verbose, LoggingTarget target = LoggingTarget.Runtime)
+    {
+        if (DebugUtils.IsDebugBuild)
+            System.Diagnostics.Debug.Print(message);
+        log(message, level, target);
+    }
+
     #endregion
 
     /// <summary>
@@ -269,10 +282,12 @@ public class Logger
         {
             lock (console_lock)
             {
+                // For debug listeners
+                System.Diagnostics.Debug.Print(formattedMessage);
+                // For console output
                 Console.WriteLine(formattedMessage);
             }
         }
-
     }
 
     private static StreamWriter getFileWriter(LoggingTarget target)
