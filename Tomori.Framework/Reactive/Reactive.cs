@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 
 namespace Tomori.Framework.Reactive;
 
@@ -50,9 +49,6 @@ public class Reactive<T> : IReactive<T>
         {
             if (Disabled)
                 return;
-
-            if (bindings.Count > 0)
-                throw new InvalidOperationException($"Cannot set value on a {GetType().Name} that is bound to another. Unbind all sources first.");
 
             if (EqualityComparer<T>.Default.Equals(this.value, value))
                 return;
@@ -112,9 +108,6 @@ public class Reactive<T> : IReactive<T>
     {
         if (Disabled)
             return;
-
-        if (bindings.Any())
-            throw new InvalidOperationException($"Cannot parse value on a {GetType().Name} that is bound to another. Unbind all sources first.");
 
         if (input == null)
         {
