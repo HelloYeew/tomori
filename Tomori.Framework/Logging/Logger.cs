@@ -147,7 +147,7 @@ public class Logger
     {
         if (processingTask != null && !processingTask.IsCompleted)
         {
-            Warning("Logger is already initialized.");
+            // Logger is already initialized and running.
             return;
         }
 
@@ -155,6 +155,7 @@ public class Logger
 
         logDirectory = string.IsNullOrWhiteSpace(logPath) ? "logs" : logPath;
         MinimumLogLevel = minimumLogLevel;
+        LogToConsole = logToConsole;
         startupTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         if (!Directory.Exists(logDirectory))
@@ -167,6 +168,8 @@ public class Logger
         cancellationTokenSource = new CancellationTokenSource();
 
         processingTask = Task.Run(() => processLogQueue(cancellationTokenSource.Token));
+
+        Debug($"Log location : {Path.Combine(Directory.GetCurrentDirectory(), logDirectory)}");
     }
 
     /// <summary>
@@ -210,7 +213,7 @@ public class Logger
 
         Debug("Logger is shutting down...");
 
-        cancellationTokenSource.Cancel();
+        cancellationTokenSource.CancelAfter(1000);
 
         try
         {
