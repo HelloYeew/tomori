@@ -69,7 +69,7 @@ public class Reactive<T> : IReactive<T>
         if (other == this)
             throw new InvalidOperationException("Cannot bind the reactive object to itself.");
         if (bindings.Contains(other))
-            throw new InvalidOperationException("Already bound to this reactive object.");
+            return; // Already bound to this source.
 
         bindings.Add(other);
         other.ValueChanged += OnBoundValueChanged;
