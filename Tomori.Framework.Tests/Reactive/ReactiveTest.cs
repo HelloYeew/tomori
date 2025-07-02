@@ -1,6 +1,7 @@
 // This code is part of the Tomori framework project. Licensed under the MIT License.
 // See the LICENSE file for full license text.
 
+using System;
 using NUnit.Framework;
 using Tomori.Framework.Reactive;
 using Tomori.Framework.Logging;
@@ -66,6 +67,19 @@ public class ReactiveTest
             Assert.That(eventNewValue, Is.EqualTo("anon tokyo 2"));
             Assert.That(reactive.Value, Is.EqualTo("anon tokyo 2"));
         }
+    }
+
+    [Test]
+    public void TestSetValueByParse()
+    {
+        var reactive = new Reactive<int>(10);
+        Assert.That(reactive.Value, Is.EqualTo(10));
+
+        reactive.Parse("20");
+        Assert.That(reactive.Value, Is.EqualTo(20));
+
+        Assert.Throws(typeof(InvalidOperationException), () => reactive.Parse("not a number"), "use parse with the value that's not convertible to holding type should throw an exception");
+        Assert.That(reactive.Value, Is.EqualTo(20), "value still not change");
     }
 
     [Test]
