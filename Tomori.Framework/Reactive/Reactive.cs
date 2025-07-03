@@ -17,9 +17,6 @@ namespace Tomori.Framework.Reactive;
 /// <typeparam name="T"></typeparam>
 public class Reactive<T> : IReactive<T>
 {
-    /// <summary>
-    /// The event that will be raised when the value of the reactive object changes.
-    /// </summary>
     public event Action<ValueChangedEvent<T>> ValueChanged = delegate { };
 
     private T value;
@@ -104,7 +101,7 @@ public class Reactive<T> : IReactive<T>
     /// </summary>
     /// <param name="input">The input object to parse.</param>
     /// <exception cref="InvalidOperationException">Thrown if the reactive object is bound to another source or if parsing fails.</exception>
-    public void Parse(object input)
+    public virtual void Parse(object input)
     {
         if (Disabled)
             return;
