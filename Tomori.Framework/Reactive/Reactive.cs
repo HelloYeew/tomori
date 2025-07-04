@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using Tomori.Framework.Extensions.ObjectExtensions;
 
 namespace Tomori.Framework.Reactive;
 
@@ -100,8 +101,9 @@ public class Reactive<T> : IReactive<T>
     /// Parses the input object into the value of this reactive object.
     /// </summary>
     /// <param name="input">The input object to parse.</param>
+    /// <param name="formatProvider"><see cref="IFormatProvider"/> to use for parsing, defaults to <see cref="CultureInfo.InvariantCulture"/>.</param>
     /// <exception cref="InvalidOperationException">Thrown if the reactive object is bound to another source or if parsing fails.</exception>
-    public virtual void Parse(object input)
+    public virtual void Parse(object input, IFormatProvider formatProvider = null)
     {
         if (Disabled)
             return;
@@ -112,21 +114,15 @@ public class Reactive<T> : IReactive<T>
             return;
         }
 
-        try
+        Type underlyingType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+        if (underlyingType.IsEnum)
         {
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            if (converter.CanConvertFrom(input.GetType()))
-            {
-                Value = (T)converter.ConvertFrom(input);
-            }
-            else
-            {
-                Value = (T)Convert.ChangeType(input, typeof(T), CultureInfo.InvariantCulture);
-            }
+            Value = (T)Enum.Parse(underlyingType, input.ToString().AsNonNull());
         }
-        catch (Exception ex)
+        else
         {
-            throw new InvalidOperationException($"Failed to parse input '{input}' into type '{typeof(T)}'.", ex);
+            Value = (T)Convert.ChangeType(input, underlyingType, formatProvider);
         }
     }
 

@@ -78,7 +78,7 @@ public class ReactiveTest
         reactive.Parse("20");
         Assert.That(reactive.Value, Is.EqualTo(20));
 
-        Assert.Throws(typeof(InvalidOperationException), () => reactive.Parse("not a number"), "use parse with the value that's not convertible to holding type should throw an exception");
+        Assert.Throws(typeof(FormatException), () => reactive.Parse("not a number"), "use parse with the value that's not convertible to holding type should throw an exception");
         Assert.That(reactive.Value, Is.EqualTo(20), "value still not change");
     }
 

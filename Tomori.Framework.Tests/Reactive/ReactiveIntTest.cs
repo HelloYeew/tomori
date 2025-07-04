@@ -1,0 +1,48 @@
+// This code is part of the Tomori framework project. Licensed under the MIT License.
+// See the LICENSE file for full license text.
+
+using System;
+using NUnit.Framework;
+using Tomori.Framework.Reactive;
+
+namespace Tomori.Framework.Tests.Reactive;
+
+[TestFixture]
+public class ReactiveIntTest
+{
+    [TestCase(10)]
+    [TestCase(-10)]
+    [TestCase(int.MinValue)]
+    [TestCase(int.MaxValue)]
+    public void TestSetValue(int value)
+    {
+        var reactive = new ReactiveInt
+        {
+            Value = value
+        };
+        Assert.That(reactive.Value, Is.EqualTo(value));
+    }
+
+    [TestCase("10", 10)]
+    [TestCase("-10", -10)]
+    public void TestParseFromString(string value, int actual)
+    {
+        var reactive = new ReactiveInt();
+        reactive.Parse(value);
+        Assert.That(reactive.Value, Is.EqualTo(actual));
+    }
+
+    [Test]
+    public void TestSetValueWithinRange()
+    {
+        var reactive = new ReactiveInt
+        {
+            MinValue = 0,
+            MaxValue = 100,
+            Value = 50
+        };
+        Assert.That(reactive.Value, Is.EqualTo(50));
+        Assert.Throws<ArgumentOutOfRangeException>(() => reactive.Value = -1, "setting value below min value should throw an exception");
+        Assert.Throws<ArgumentOutOfRangeException>(() => reactive.Value = 1000, "setting value above max value should throw an exception");
+    }
+}

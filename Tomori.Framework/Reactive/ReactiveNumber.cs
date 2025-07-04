@@ -117,9 +117,9 @@ public class ReactiveNumber<T> : Reactive<T>, IReactiveNumber<T>
         }
     }
 
-    public override void Parse(object input)
+    public override void Parse(object input, IFormatProvider formatProvider = null)
     {
-        base.Parse(input);
+        base.Parse(input, formatProvider);
 
         setValue(Value);
     }
@@ -140,4 +140,9 @@ public class ReactiveNumber<T> : Reactive<T>, IReactiveNumber<T>
     }
 
     public bool IsInteger => typeof(T) != typeof(float) && typeof(T) != typeof(double) && typeof(T) != typeof(decimal);
+
+    public override string ToString()
+    {
+        return $"{GetType().Name} {Value} ({MinValue} - {MaxValue})";
+    }
 }

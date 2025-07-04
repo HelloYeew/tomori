@@ -17,12 +17,6 @@ public class ReactiveNumberTest
         Logger.Initialize();
     }
 
-    [OneTimeTearDown]
-    public void ShutdownLogger()
-    {
-        Logger.Shutdown();
-    }
-
     [Test]
     public void TestInitialValue()
     {
@@ -113,7 +107,7 @@ public class ReactiveNumberTest
         reactive.Parse("20");
         Assert.That(reactive.Value, Is.EqualTo(20));
         Assert.That(eventCalled, Is.EqualTo(1), "ValueChanged should be called when the value is set by Parse");
-        Assert.Throws(typeof(InvalidOperationException), () => reactive.Parse("string"), "use parse with the value that's not convertible to holding type should throw an exception");
+        Assert.Throws(typeof(FormatException), () => reactive.Parse("string"), "use parse with the value that's not convertible to holding type should throw an exception");
         Assert.That(reactive.Value, Is.EqualTo(20), "value still not change after failed parse");
         Assert.That(eventCalled, Is.EqualTo(1), "ValueChanged should not be called after failed parse");
     }
