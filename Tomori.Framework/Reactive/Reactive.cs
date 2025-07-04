@@ -105,6 +105,8 @@ public class Reactive<T> : IReactive<T>
     /// <exception cref="InvalidOperationException">Thrown if the reactive object is bound to another source or if parsing fails.</exception>
     public virtual void Parse(object input, IFormatProvider formatProvider = null)
     {
+        // TODO: Parse value from the Reactive object should be parsable if the child type is parsable.
+
         if (Disabled)
             return;
 

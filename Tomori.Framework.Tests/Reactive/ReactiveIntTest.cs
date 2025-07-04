@@ -23,6 +23,20 @@ public class ReactiveIntTest
         Assert.That(reactive.Value, Is.EqualTo(value));
     }
 
+    [TestCase(10, 10, true)]
+    [TestCase(10, -10, false)]
+    public void TestDefaultValueCheck(int defaultValue, int value, bool isDefault)
+    {
+        var reactive = new ReactiveInt(defaultValue);
+        reactive.ValueChanged += e => Console.WriteLine($"Value changed from {e.OldValue} to {e.NewValue}");
+        Assert.That(reactive.Value, Is.EqualTo(defaultValue));
+        Assert.That(reactive.Default, Is.EqualTo(defaultValue));
+        Assert.That(reactive.IsDefault, Is.True);
+
+        reactive.Value = value;
+        Assert.That(reactive.IsDefault, Is.EqualTo(isDefault));
+    }
+
     [TestCase("10", 10)]
     [TestCase("-10", -10)]
     public void TestParseFromString(string value, int actual)
