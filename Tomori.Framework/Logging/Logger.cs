@@ -17,6 +17,7 @@ public class Logger
     private static readonly ConcurrentQueue<LogMessage> message_queue = new ConcurrentQueue<LogMessage>();
     private static readonly ConcurrentDictionary<LoggingTarget, StreamWriter> file_writers = new ConcurrentDictionary<LoggingTarget, StreamWriter>();
     private static readonly Lock console_lock = new Lock();  // Lock for console output to not mutate concurrently
+    private static readonly ManualResetEventSlim processing_gate = new ManualResetEventSlim(true);
 
     private static Task? processingTask;
     private static CancellationTokenSource? cancellationTokenSource;
@@ -120,6 +121,19 @@ public class Logger
     /// <param name="target">The target to write the log message to</param>
     public static void Fatal(string message, Exception ex, LoggingTarget target = LoggingTarget.Runtime) => log($"{message}\n{ex}", LogLevel.Fatal, target);
 
+    /// <summary>
+    /// Log a message to the logger with a specified <see cref="LogLevel"/> and <see cref="LoggingTarget"/>, also prints it to the debug output if in a debug build.
+    /// </summary>
+    /// <param name="message"> The message to log.</param>
+    /// <param name="level"> The log level of the message. Default is <see cref="LogLevel.Verbose"/>.</param>
+    /// <param name="target"> The target to write the log message to. Default is <see cref="LoggingTarget.Runtime"/>.</param>
+    public static void LogPrint(string message, LogLevel level = LogLevel.Verbose, LoggingTarget target = LoggingTarget.Runtime)
+    {
+        if (DebugUtils.IsDebugBuild)
+            System.Diagnostics.Debug.Print(message);
+        log(message, level, target);
+    }
+
     #endregion
 
     /// <summary>
@@ -133,12 +147,15 @@ public class Logger
     {
         if (processingTask != null && !processingTask.IsCompleted)
         {
-            Warning("Logger is already initialized.");
+            // Logger is already initialized and running.
             return;
         }
 
+        processing_gate.Reset();
+
         logDirectory = string.IsNullOrWhiteSpace(logPath) ? "logs" : logPath;
         MinimumLogLevel = minimumLogLevel;
+        LogToConsole = logToConsole;
         startupTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         if (!Directory.Exists(logDirectory))
@@ -151,6 +168,8 @@ public class Logger
         cancellationTokenSource = new CancellationTokenSource();
 
         processingTask = Task.Run(() => processLogQueue(cancellationTokenSource.Token));
+
+        Debug($"Log location : {Path.Combine(Directory.GetCurrentDirectory(), logDirectory)}");
     }
 
     /// <summary>
@@ -187,11 +206,14 @@ public class Logger
     /// </summary>
     public static void Shutdown()
     {
+        // Ensure that we don't try to shut down before the processing task has even started.
+        processing_gate.Wait();
+
         if (cancellationTokenSource == null || processingTask == null) return;
 
-        Verbose("Logger is shutting down...");
+        Debug("Logger is shutting down...");
 
-        cancellationTokenSource.Cancel();
+        cancellationTokenSource.CancelAfter(1000);
 
         try
         {
@@ -207,6 +229,7 @@ public class Logger
         }
 
         cancellationTokenSource.Dispose();
+        processing_gate.Dispose();
 
         foreach (var writer in file_writers.Values)
         {
@@ -219,7 +242,11 @@ public class Logger
 
     private static void log(string message, LogLevel level, LoggingTarget target)
     {
-        if (cancellationTokenSource == null || cancellationTokenSource.IsCancellationRequested || level < MinimumLogLevel)
+        // Block until the processing task is fully initialized and running.
+        // since maybe the program is really short-lived and the processing task hasn't started yet.
+        processing_gate.Wait();
+
+        if (level < MinimumLogLevel || cancellationTokenSource == null || cancellationTokenSource.IsCancellationRequested || level < MinimumLogLevel)
             return;
 
         message_queue.Enqueue(new LogMessage(DateTime.UtcNow, level, target, message));
@@ -227,6 +254,9 @@ public class Logger
 
     private static async Task processLogQueue(CancellationToken token)
     {
+        // Signal that the processing task is ready to process messages.
+        processing_gate.Set();
+
         while (!token.IsCancellationRequested || !message_queue.IsEmpty)
         {
             if (message_queue.TryDequeue(out var logMessage))
@@ -269,10 +299,12 @@ public class Logger
         {
             lock (console_lock)
             {
+                // For debug listeners
+                System.Diagnostics.Debug.Print(formattedMessage);
+                // For console output
                 Console.WriteLine(formattedMessage);
             }
         }
-
     }
 
     private static StreamWriter getFileWriter(LoggingTarget target)
@@ -311,7 +343,7 @@ public class Logger
         return stringBuilder.ToString();
     }
 
-    private static string getLogLevelPrefix(LogLevel level) => level == LogLevel.Debug ? "verbose" : level.ToString().ToLower();
+    private static string getLogLevelPrefix(LogLevel level) => level.ToString().ToLower();
 }
 
 /// <summary>
