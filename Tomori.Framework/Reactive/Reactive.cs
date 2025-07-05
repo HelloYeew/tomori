@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
 using Tomori.Framework.Extensions.ObjectExtensions;
 
@@ -15,7 +14,7 @@ namespace Tomori.Framework.Reactive;
 /// The minimum implementation of a reactive object that can be bound to other reactive objects.
 /// When the value of this object changes, it will raise an event.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">The type of the <see cref="Value"/> that this reactive object holds.</typeparam>
 public class Reactive<T> : IReactive<T>
 {
     public event Action<ValueChangedEvent<T>> ValueChanged = delegate { };
