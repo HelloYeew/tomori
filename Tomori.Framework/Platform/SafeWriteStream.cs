@@ -1,6 +1,8 @@
 // This code is part of the Tomori framework project. Licensed under the MIT License.
 // See the LICENSE file for full license text.
 
+#nullable disable
+
 using System.IO;
 
 namespace Tomori.Framework.Platform;
