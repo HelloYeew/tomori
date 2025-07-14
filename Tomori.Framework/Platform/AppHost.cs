@@ -105,10 +105,22 @@ public abstract class AppHost : IDisposable
 
     private static readonly SemaphoreSlim host_running_mutex = new SemaphoreSlim(1);
 
+    protected virtual void SetupForRun()
+    {
+        Logger.Storage = Storage.GetStorageForDirectory("logs");
+    }
+
     public void Run(App app)
     {
+        Storage = app.CreateStorage(this, GetDefaultAppStorage());
+
         Logger.AppIdentifier = Name;
+        Logger.VersionIdentifier = RuntimeInfo.EntryAssembly.GetName().Version?.ToString() ?? Logger.VersionIdentifier;
+
+        SetupForRun();
+
         Logger.Initialize();
+
         // TODO: Testing purpose only, will remove later.
         Logger.Verbose($"Starting {Options.FriendlyAppName}...");
 

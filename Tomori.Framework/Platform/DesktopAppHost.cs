@@ -55,6 +55,6 @@ public class DesktopAppHost : AppHost
 
     protected override void Dispose(bool isDisposing)
     {
-        base.Dispose();
+        base.Dispose(isDisposing);
     }
 }

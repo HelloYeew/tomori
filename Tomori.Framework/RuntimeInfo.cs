@@ -13,7 +13,7 @@ namespace Tomori.Framework;
 public static class RuntimeInfo
 {
     /// <summary>
-    /// The absolute path to the startup directory of this game.
+    /// The absolute path to the startup directory of this application.
     /// </summary>
     public static string StartupDirectory { get; } = AppContext.BaseDirectory;
 

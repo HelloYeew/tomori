@@ -14,6 +14,14 @@ public class App : IDisposable
 
     protected AppHost Host { get; private set; }
 
+    /// <summary>
+    /// Create a default <see cref="Storage"/> that
+    /// </summary>
+    /// <param name="host"></param>
+    /// <param name="defaultStorage"></param>
+    /// <returns></returns>
+    protected internal virtual Storage CreateStorage(AppHost host, Storage defaultStorage) => defaultStorage;
+
     public void Dispose()
     {
         // TODO release managed resources here
