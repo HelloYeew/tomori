@@ -103,6 +103,12 @@ public abstract class AppHost : IDisposable
     /// <param name="url"> The URL to open.</param>
     public abstract void OpenUrlExternally(string url);
 
+    /// <summary>
+    /// Create the game window for the host.
+    /// </summary>
+    /// <returns>An instance of <see cref="IWindow"/> that represents the game window.</returns>
+    protected abstract IWindow CreateWindow();
+
     private static readonly SemaphoreSlim host_running_mutex = new SemaphoreSlim(1);
 
     protected virtual void SetupForRun()

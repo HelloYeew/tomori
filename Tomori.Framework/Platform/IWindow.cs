@@ -7,5 +7,18 @@ namespace Tomori.Framework.Platform;
 
 public interface IWindow : IDisposable
 {
+    /// <summary>
+    /// Create the window.
+    /// </summary>
+    void Create();
 
+    /// <summary>
+    /// Start the window's main loop.
+    /// </summary>
+    void Run();
+
+    /// <summary>
+    /// Close the window peacefully.
+    /// </summary>
+    void Close();
 }

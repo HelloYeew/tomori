@@ -29,6 +29,8 @@ public class DesktopAppHost : AppHost
 
     public override Storage GetStorage(string path) => new DesktopStorage(path, this);
 
+    protected override IWindow CreateWindow() => new SDLWindow();
+
     public override bool OpenFileExternally(string filename)
     {
         openUsingShellExecute(filename);
