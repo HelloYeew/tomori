@@ -14,7 +14,7 @@ public class HostOptions
     public string FriendlyAppName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Whether this is a portable installation. Will cause all game files to be placed alongside the executable, rather than in the standard data directory.
+    /// Whether this is a portable installation. Will cause all application files to be placed alongside the executable, rather than in the standard data directory.
     /// </summary>
     public bool PortableInstallation { get; set; }
 }

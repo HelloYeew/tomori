@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Tomori.Framework.Development;
+using Tomori.Framework.Platform;
 
 namespace Tomori.Framework.Logging;
 
@@ -21,8 +22,19 @@ public class Logger
 
     private static Task? processingTask;
     private static CancellationTokenSource? cancellationTokenSource;
-    private static string logDirectory = "logs";
     private static long startupTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    private static Storage storage;
+
+    public static Storage Storage
+    {
+        get => storage;
+        set
+        {
+            storage = value ?? throw new ArgumentNullException(nameof(value));
+
+            clearOldLogs();
+        }
+    }
 
     private readonly record struct LogMessage(DateTime Timestamp, LogLevel Level, LoggingTarget Target, string Message);
 
@@ -140,10 +152,9 @@ public class Logger
     /// Initialize the logger, creates the log directory if it does not exist, and starts the background processing task.
     /// <remarks>This method should be called once at application startup. <see cref="AppIdentifier"/> and <see cref="VersionIdentifier"/> should be set before calling this.</remarks>
     /// </summary>
-    /// <param name="logPath">The base directory where log files will be stored. If null or empty, defaults to "logs".</param>
     /// <param name="minimumLogLevel">The minimum log level to be processed. Messages below this level will be ignored. Default is <see cref="LogLevel.Debug"/>.</param>
     /// <param name="logToConsole">Whether to log messages to the console. Default is <c>true</c>.</param>
-    public static void Initialize(string? logPath = null, LogLevel minimumLogLevel = LogLevel.Debug, bool logToConsole = true)
+    public static void Initialize(LogLevel minimumLogLevel = LogLevel.Debug, bool logToConsole = true)
     {
         if (processingTask != null && !processingTask.IsCompleted)
         {
@@ -153,15 +164,9 @@ public class Logger
 
         processing_gate.Reset();
 
-        logDirectory = string.IsNullOrWhiteSpace(logPath) ? "logs" : logPath;
         MinimumLogLevel = minimumLogLevel;
         LogToConsole = logToConsole;
         startupTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        if (!Directory.Exists(logDirectory))
-        {
-            Directory.CreateDirectory(logDirectory);
-        }
 
         clearOldLogs();
 
@@ -169,7 +174,7 @@ public class Logger
 
         processingTask = Task.Run(() => processLogQueue(cancellationTokenSource.Token));
 
-        Debug($"Log location : {Path.Combine(Directory.GetCurrentDirectory(), logDirectory)}");
+        Debug($"Log location : {storage.GetFullPath(string.Empty)}");
     }
 
     /// <summary>
@@ -178,19 +183,18 @@ public class Logger
     /// <param name="retentionDays"></param>
     private static void clearOldLogs(int retentionDays = 7)
     {
-        if (!Directory.Exists(logDirectory)) return;
+        if (!storage.ExistsDirectory(string.Empty)) return;
 
-        string[] files = Directory.GetFiles(logDirectory, "*.log");
+        var files = new DirectoryInfo(storage.GetFullPath(string.Empty)).GetFiles("*.log");
         var threshold = DateTime.UtcNow.AddDays(-retentionDays);
 
-        foreach (string file in files)
+        foreach (var file in files)
         {
             try
             {
-                var lastWriteTime = File.GetLastWriteTimeUtc(file);
-                if (lastWriteTime < threshold)
+                if (file.LastWriteTimeUtc < threshold)
                 {
-                    File.Delete(file);
+                    file.Delete();
                 }
             }
             catch (Exception ex)
@@ -309,18 +313,13 @@ public class Logger
 
     private static StreamWriter getFileWriter(LoggingTarget target)
     {
-        return file_writers.GetOrAdd(target, (key) =>
+        return file_writers.GetOrAdd(target, key =>
         {
-            string filePath = Path.Combine(logDirectory, $"{startupTimestamp}.{key.ToString().ToLower()}.log");
-            bool fileExists = File.Exists(filePath);
-
-            var stream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            string fileName = $"{startupTimestamp}.{key.ToString().ToLower()}.log";
+            var stream = storage.GetStream(fileName, FileAccess.Write, FileMode.Append);
             var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
-            if (!fileExists)
-            {
-                writer.WriteLine(generateHeader(key));
-            }
+            writer.WriteLine(generateHeader(key));
 
             return writer;
         });
