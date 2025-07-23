@@ -29,7 +29,7 @@ public class DesktopAppHost : AppHost
 
     public override Storage GetStorage(string path) => new DesktopStorage(path, this);
 
-    protected override IWindow CreateWindow() => new SDLWindow();
+    protected override IWindow CreateWindow() => new DesktopWindow();
 
     public override bool OpenFileExternally(string filename)
     {

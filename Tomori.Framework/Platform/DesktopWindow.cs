@@ -3,10 +3,7 @@
 
 namespace Tomori.Framework.Platform;
 
-public class DesktopWindow : IWindow
+public class DesktopWindow : SDLWindow
 {
-    public void Dispose()
-    {
-        // TODO release managed resources here
-    }
+
 }

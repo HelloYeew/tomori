@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Threading;
 using JetBrains.Annotations;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
@@ -20,6 +21,8 @@ public abstract class AppHost : IDisposable
     public HostOptions Options { get; private set; }
 
     public string Name { get; }
+
+    private ExecutionState executionState = ExecutionState.Idle;
 
     protected AppHost([NotNull] string appName, [CanBeNull] HostOptions options = null)
     {
@@ -118,6 +121,11 @@ public abstract class AppHost : IDisposable
 
     public void Run(App app)
     {
+        if (RuntimeInfo.IsDesktop)
+        {
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+        }
+
         Storage = app.CreateStorage(this, GetDefaultAppStorage());
 
         Logger.AppIdentifier = Name;
@@ -125,14 +133,36 @@ public abstract class AppHost : IDisposable
 
         SetupForRun();
 
+        executionState = ExecutionState.Running;
+
         Logger.Initialize();
 
         // TODO: Testing purpose only, will remove later.
         Logger.Verbose($"Starting {Options.FriendlyAppName}...");
 
-        foreach (string path in UserStoragePaths)
+        try
         {
-            Logger.Verbose($"User storage path: {path}");
+            if (!host_running_mutex.Wait(10000))
+            {
+                Logger.Error("Another instance of the application is already running.");
+                return;
+            }
+
+            Window = CreateWindow();
+            Window.Title = Options.FriendlyAppName;
+            Window.Initialize();
+            Window.Create();
+
+            
+
+            while (executionState != ExecutionState.Stopping)
+            {
+                // Update window and process events.
+            }
+        }
+        finally
+        {
+
         }
     }
 
