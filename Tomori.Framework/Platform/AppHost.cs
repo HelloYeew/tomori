@@ -154,9 +154,22 @@ public abstract class AppHost : IDisposable
             Window.Create();
             Window.Run();
 
-            while (executionState != ExecutionState.Stopping)
+            try
             {
-                // Update window and process events.
+                if (Window != null)
+                {
+                    // Update window event
+                }
+                else
+                {
+                    while (executionState != ExecutionState.Stopping)
+                    {
+                        // Update window event
+                    }
+                }
+            }
+            catch (OutOfMemoryException)
+            {
             }
         }
         finally

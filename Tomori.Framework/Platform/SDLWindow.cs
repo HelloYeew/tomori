@@ -110,6 +110,8 @@ public class SDLWindow : IWindow
         while (running)
         {
             runFrame();
+            // TODO: Remove this to IRenderer class
+            render();
         }
     }
 
@@ -168,15 +170,18 @@ public class SDLWindow : IWindow
 
     private unsafe void setTitle(string newTitle)
     {
+        title = newTitle;
+
         if (window == null)
             return;
 
         sdl.SetWindowTitle(window, newTitle);
-        title = newTitle;
     }
 
     private unsafe void setResizable(bool isResizable)
     {
+        resizable = isResizable;
+
         if (window == null)
             return;
 
@@ -186,6 +191,5 @@ public class SDLWindow : IWindow
             windowFlags &= ~WindowFlags.Resizable;
 
         sdl.SetWindowResizable(window, (SdlBool)(isResizable ? 1 : 0));
-        resizable = isResizable;
     }
 }
