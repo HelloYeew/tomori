@@ -33,6 +33,16 @@ public interface IWindow : IDisposable
     /// </summary>
     void Run();
 
+    event Action Update;
+
+    event Action Suspended;
+
+    event Action Resumed;
+
+    event Action ExitRequested;
+
+    event Action Exited;
+
     /// <summary>
     /// Close the window peacefully.
     /// </summary>

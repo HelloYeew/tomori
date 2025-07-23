@@ -126,20 +126,6 @@ public abstract class AppHost : IDisposable
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
         }
 
-        Storage = app.CreateStorage(this, GetDefaultAppStorage());
-
-        Logger.AppIdentifier = Name;
-        Logger.VersionIdentifier = RuntimeInfo.EntryAssembly.GetName().Version?.ToString() ?? Logger.VersionIdentifier;
-
-        SetupForRun();
-
-        executionState = ExecutionState.Running;
-
-        Logger.Initialize();
-
-        // TODO: Testing purpose only, will remove later.
-        Logger.Verbose($"Starting {Options.FriendlyAppName}...");
-
         try
         {
             if (!host_running_mutex.Wait(10000))
@@ -148,12 +134,25 @@ public abstract class AppHost : IDisposable
                 return;
             }
 
+            Storage = app.CreateStorage(this, GetDefaultAppStorage());
+
+            Logger.AppIdentifier = Name;
+            Logger.VersionIdentifier = RuntimeInfo.EntryAssembly.GetName().Version?.ToString() ?? Logger.VersionIdentifier;
+
+            SetupForRun();
+
+            executionState = ExecutionState.Running;
+
+            Logger.Initialize();
+
+            // TODO: Testing purpose only, will remove later.
+            Logger.Verbose($"Starting {Options.FriendlyAppName}...");
+
             Window = CreateWindow();
             Window.Title = Options.FriendlyAppName;
             Window.Initialize();
             Window.Create();
-
-            
+            Window.Run();
 
             while (executionState != ExecutionState.Stopping)
             {
@@ -162,7 +161,7 @@ public abstract class AppHost : IDisposable
         }
         finally
         {
-
+            host_running_mutex.Release();
         }
     }
 

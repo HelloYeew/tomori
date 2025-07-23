@@ -1,15 +1,28 @@
 // This code is part of the Tomori framework project. Licensed under the MIT License.
 // See the LICENSE file for full license text.
 
+#nullable disable
+
+using System;
+using Silk.NET.OpenGL;
 using Silk.NET.SDL;
 using Tomori.Framework.Logging;
+using Color = System.Drawing.Color;
+using Version = Silk.NET.SDL.Version;
 
 namespace Tomori.Framework.Platform;
 
 public class SDLWindow : IWindow
 {
-    private static Sdl _sdl;
+    // TODO: OpenGL need to be moved to a separate class i.e. IRenderer since we want to support other renderers in the future (Vulkan, DirectX, etc.)
+    // All rendering code need to be moved to the separate class as well.
+    private static Sdl sdl;
+    private static GL gl;
+    private static unsafe void* glContext;
     private static unsafe Window* window;
+
+    private bool initialized;
+    private bool running;
 
     private string title = "Window";
     private bool resizable = true;
@@ -28,14 +41,26 @@ public class SDLWindow : IWindow
         set => setResizable(value);
     }
 
-    public void Initialize()
+    public event Action Update = delegate { };
+    public event Action Suspended = delegate { };
+    public event Action Resumed = delegate { };
+    public event Action ExitRequested = delegate { };
+    public event Action Exited = delegate { };
+
+    public unsafe void Initialize()
     {
-        _sdl = Sdl.GetApi();
+        sdl = Sdl.GetApi();
 
         Version sdlVersion = new Version();
+        sdl.GetVersion(ref sdlVersion);
 
-        Logger.Verbose("SDL initialized");
-        Logger.Verbose($"SDL Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}");
+        byte* sdlRevision = sdl.GetRevision();
+        byte* videoDriver = sdl.GetCurrentVideoDriver();
+
+        Logger.Verbose($@"SDL initialized
+                                  SDL Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}
+                                  SDL Revision: {new string((sbyte*)sdlRevision)}
+                                  SDL Video Driver: {new string((sbyte*)videoDriver)}");
 
         windowFlags = WindowFlags.Opengl | WindowFlags.AllowHighdpi;
     }
@@ -47,7 +72,7 @@ public class SDLWindow : IWindow
             windowFlags |= WindowFlags.Resizable;
         }
 
-        window = _sdl.CreateWindow(
+        window = sdl.CreateWindow(
             title,
             Sdl.WindowposCentered, // X position
             Sdl.WindowposCentered, // Y position
@@ -55,21 +80,90 @@ public class SDLWindow : IWindow
             600, // Height
             (uint)windowFlags
         );
+
+        if (window == null)
+        {
+            Logger.Error("Failed to create SDL window: " + sdl.GetErrorS());
+            throw new Exception("SDL window creation failed.");
+        }
+
+        glContext = sdl.GLCreateContext(window);
+        if (glContext == null)
+        {
+            Logger.Error("Failed to create OpenGL context: " + sdl.GetErrorS());
+            throw new Exception("OpenGL context creation failed.");
+        }
+
+        sdl.GLMakeCurrent(window, glContext);
+        sdl.GLSetSwapInterval(1); // Enable VSync
+
+        Logger.Verbose("SDL window created successfully");
+
+        gl = GL.GetApi(proc => (nint)sdl.GLGetProcAddress(proc));
+        gl.ClearColor(Color.DarkBlue);
+
+        running = true;
     }
 
     public void Run()
     {
-        throw new System.NotImplementedException();
+        while (running)
+        {
+            runFrame();
+        }
+    }
+
+    private void runFrame()
+    {
+        if (!running)
+            return;
+
+        handleSdlEvents();
+        Update?.Invoke();
     }
 
     public void Close()
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 
     public void Dispose()
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
+    }
+
+    private unsafe void handleSdlEvents()
+    {
+        Event sdlEvent;
+        while (sdl.PollEvent(&sdlEvent) != 0)
+        {
+            switch ((EventType)sdlEvent.Type)
+            {
+                case EventType.Quit:
+                    ExitRequested?.Invoke();
+                    running = false;
+                    break;
+
+                case EventType.Windowevent:
+                    // TODO: Handle window events like resize, minimize, etc.
+                    break;
+
+                case EventType.Keydown:
+                    // TODO: Handle key down events
+                    break;
+            }
+        }
+    }
+
+    private unsafe void render()
+    {
+        if (window == null)
+            return;
+
+        gl.Clear((uint)ClearBufferMask.ColorBufferBit);
+
+
+        sdl.GLSwapWindow(window);
     }
 
     private unsafe void setTitle(string newTitle)
@@ -77,7 +171,7 @@ public class SDLWindow : IWindow
         if (window == null)
             return;
 
-        _sdl.SetWindowTitle(window, newTitle);
+        sdl.SetWindowTitle(window, newTitle);
         title = newTitle;
     }
 
@@ -91,7 +185,7 @@ public class SDLWindow : IWindow
         else
             windowFlags &= ~WindowFlags.Resizable;
 
-        _sdl.SetWindowResizable(window, (SdlBool)(isResizable ? 1 : 0));
+        sdl.SetWindowResizable(window, (SdlBool)(isResizable ? 1 : 0));
         resizable = isResizable;
     }
 }
