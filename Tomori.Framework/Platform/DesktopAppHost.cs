@@ -3,9 +3,11 @@
 
 #nullable disable
 
+using System;
 using System.Diagnostics;
 using System.IO;
 using Tomori.Framework.Extensions;
+using Tomori.Framework.Logging;
 
 namespace Tomori.Framework.Platform;
 
@@ -29,6 +31,8 @@ public class DesktopAppHost : AppHost
 
     public override Storage GetStorage(string path) => new DesktopStorage(path, this);
 
+    protected override IWindow CreateWindow() => new DesktopWindow();
+
     public override bool OpenFileExternally(string filename)
     {
         openUsingShellExecute(filename);
@@ -43,7 +47,17 @@ public class DesktopAppHost : AppHost
 
     public override void OpenUrlExternally(string url)
     {
-        return;
+        if (!url.CheckIsValidUrl())
+            throw new ArgumentException("The provided URL is not a valid protocol to open externally, it must start with http://, https:// or mailto:.", nameof(url));
+
+        try
+        {
+            openUsingShellExecute(url);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Unable to open external link.", ex);
+        }
     }
 
     private static void openUsingShellExecute(string path) => Process.Start(new ProcessStartInfo

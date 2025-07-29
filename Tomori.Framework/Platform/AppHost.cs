@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Threading;
 using JetBrains.Annotations;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
@@ -20,6 +21,8 @@ public abstract class AppHost : IDisposable
     public HostOptions Options { get; private set; }
 
     public string Name { get; }
+
+    private ExecutionState executionState = ExecutionState.Idle;
 
     protected AppHost([NotNull] string appName, [CanBeNull] HostOptions options = null)
     {
@@ -103,6 +106,12 @@ public abstract class AppHost : IDisposable
     /// <param name="url"> The URL to open.</param>
     public abstract void OpenUrlExternally(string url);
 
+    /// <summary>
+    /// Create the game window for the host.
+    /// </summary>
+    /// <returns>An instance of <see cref="IWindow"/> that represents the game window.</returns>
+    protected abstract IWindow CreateWindow();
+
     private static readonly SemaphoreSlim host_running_mutex = new SemaphoreSlim(1);
 
     protected virtual void SetupForRun()
@@ -112,21 +121,60 @@ public abstract class AppHost : IDisposable
 
     public void Run(App app)
     {
-        Storage = app.CreateStorage(this, GetDefaultAppStorage());
-
-        Logger.AppIdentifier = Name;
-        Logger.VersionIdentifier = RuntimeInfo.EntryAssembly.GetName().Version?.ToString() ?? Logger.VersionIdentifier;
-
-        SetupForRun();
-
-        Logger.Initialize();
-
-        // TODO: Testing purpose only, will remove later.
-        Logger.Verbose($"Starting {Options.FriendlyAppName}...");
-
-        foreach (string path in UserStoragePaths)
+        if (RuntimeInfo.IsDesktop)
         {
-            Logger.Verbose($"User storage path: {path}");
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+        }
+
+        try
+        {
+            if (!host_running_mutex.Wait(10000))
+            {
+                Logger.Error("Another instance of the application is already running.");
+                return;
+            }
+
+            Storage = app.CreateStorage(this, GetDefaultAppStorage());
+
+            Logger.AppIdentifier = Name;
+            Logger.VersionIdentifier = RuntimeInfo.EntryAssembly.GetName().Version?.ToString() ?? Logger.VersionIdentifier;
+
+            SetupForRun();
+
+            executionState = ExecutionState.Running;
+
+            Logger.Initialize();
+
+            // TODO: Testing purpose only, will remove later.
+            Logger.Verbose($"Starting {Options.FriendlyAppName}...");
+
+            Window = CreateWindow();
+            Window.Title = Options.FriendlyAppName;
+            Window.Initialize();
+            Window.Create();
+            Window.Run();
+
+            try
+            {
+                if (Window != null)
+                {
+                    // Update window event
+                }
+                else
+                {
+                    while (executionState != ExecutionState.Stopping)
+                    {
+                        // Update window event
+                    }
+                }
+            }
+            catch (OutOfMemoryException)
+            {
+            }
+        }
+        finally
+        {
+            host_running_mutex.Release();
         }
     }
 

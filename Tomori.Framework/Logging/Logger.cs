@@ -292,21 +292,24 @@ public class Logger
 
     private static async Task writeLogMessage(LogMessage logMessage)
     {
-        string formattedMessage = $"{logMessage.Timestamp:yyyy-MM-dd HH:mm:ss} [{getLogLevelPrefix(logMessage.Level)}]: {logMessage.Message}";
-
-        var writer = getFileWriter(logMessage.Target);
-        await writer.WriteLineAsync(formattedMessage);
-
-        formattedMessage = $"[{logMessage.Target.ToString().ToLower()}] " + formattedMessage;
-
-        if (LogToConsole)
+        foreach (string message in logMessage.Message.Split(new[] { '\n' }, StringSplitOptions.None))
         {
-            lock (console_lock)
+            string formattedMessage = $"{logMessage.Timestamp:yyyy-MM-dd HH:mm:ss} [{getLogLevelPrefix(logMessage.Level)}]: {message}";
+
+            var writer = getFileWriter(logMessage.Target);
+            await writer.WriteLineAsync(formattedMessage);
+
+            formattedMessage = $"[{logMessage.Target.ToString().ToLower()}] " + formattedMessage;
+
+            if (LogToConsole)
             {
-                // For debug listeners
-                System.Diagnostics.Debug.Print(formattedMessage);
-                // For console output
-                Console.WriteLine(formattedMessage);
+                lock (console_lock)
+                {
+                    // For debug listeners
+                    System.Diagnostics.Debug.Print(formattedMessage);
+                    // For console output
+                    Console.WriteLine(formattedMessage);
+                }
             }
         }
     }
