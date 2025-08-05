@@ -57,7 +57,7 @@ public class SDLWindow : IWindow
         byte* sdlRevision = sdl.GetRevision();
         byte* videoDriver = sdl.GetCurrentVideoDriver();
 
-        Logger.Verbose("SDL initialized");
+        Logger.Verbose("🪟 SDL initialized");
         Logger.Verbose($"SDL Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}");
         Logger.Verbose($"SDL Revision: {new string((sbyte*)sdlRevision)}");
         Logger.Verbose($"SDL Video Driver: {new string((sbyte*)videoDriver)}");

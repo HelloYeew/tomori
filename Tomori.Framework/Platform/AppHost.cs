@@ -7,7 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Tomori.Framework.Extensions.ExceptionExtensions;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
 using Tomori.Framework.Logging;
 
@@ -134,6 +136,9 @@ public abstract class AppHost : IDisposable
                 return;
             }
 
+            AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
+            TaskScheduler.UnobservedTaskException += unobservedTaskExceptionHandler;
+
             Storage = app.CreateStorage(this, GetDefaultAppStorage());
 
             Logger.AppIdentifier = Name;
@@ -178,6 +183,20 @@ public abstract class AppHost : IDisposable
         }
     }
 
+    private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
+    {
+        var exception = (Exception)args.ExceptionObject;
+        Logger.Error("An unhandled exception occurred in the application.", exception);
+        // TODO: abort execution from exception
+    }
+
+    private void unobservedTaskExceptionHandler(object sender, UnobservedTaskExceptionEventArgs args)
+    {
+        var exception = args.Exception.AsSingular();
+        Logger.Error("An unobserved task exception occurred in the application.", exception);
+        // TODO: abort execution from exception
+    }
+
     private bool isDisposed;
 
     protected virtual void Dispose(bool disposing)
@@ -186,6 +205,9 @@ public abstract class AppHost : IDisposable
             return;
 
         isDisposed = true;
+
+        AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
+        TaskScheduler.UnobservedTaskException -= unobservedTaskExceptionHandler;
 
         Logger.Shutdown();
     }
