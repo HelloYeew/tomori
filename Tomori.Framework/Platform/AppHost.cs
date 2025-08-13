@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Tomori.Framework.Extensions.ExceptionExtensions;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
+using Tomori.Framework.Graphics.Rendering;
 using Tomori.Framework.Logging;
 
 namespace Tomori.Framework.Platform;
@@ -18,6 +19,7 @@ namespace Tomori.Framework.Platform;
 public abstract class AppHost : IDisposable
 {
     public IWindow Window { get; private set; }
+    public IRenderer Renderer { get; private set; }
 
     [NotNull]
     public HostOptions Options { get; private set; }
@@ -114,6 +116,12 @@ public abstract class AppHost : IDisposable
     /// <returns>An instance of <see cref="IWindow"/> that represents the game window.</returns>
     protected abstract IWindow CreateWindow();
 
+    /// <summary>
+    /// Create the renderer for the host.
+    /// </summary>
+    /// <returns>An instance of <see cref="IRenderer"/> that represents the renderer.</returns>
+    protected abstract IRenderer CreateRenderer();
+
     private static readonly SemaphoreSlim host_running_mutex = new SemaphoreSlim(1);
 
     protected virtual void SetupForRun()
@@ -157,6 +165,9 @@ public abstract class AppHost : IDisposable
             Window.Title = Options.FriendlyAppName;
             Window.Initialize();
             Window.Create();
+
+            SetupRenderer();
+
             Window.Run();
 
             try
@@ -181,6 +192,12 @@ public abstract class AppHost : IDisposable
         {
             host_running_mutex.Release();
         }
+    }
+
+    protected virtual void SetupRenderer()
+    {
+        Renderer = CreateRenderer();
+        Renderer.Initialize(Window.GraphicsSurface);
     }
 
     private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
