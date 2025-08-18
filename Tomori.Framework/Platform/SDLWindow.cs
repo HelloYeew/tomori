@@ -66,6 +66,8 @@ public class SDLWindow : IWindow
         Logger.Verbose($"SDL Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}");
         Logger.Verbose($"SDL Revision: {new string((sbyte*)sdlRevision)}");
         Logger.Verbose($"SDL Video Driver: {new string((sbyte*)videoDriver)}");
+
+        initialized = true;
     }
 
     public unsafe void Create()
@@ -111,6 +113,9 @@ public class SDLWindow : IWindow
 
     public void Run()
     {
+        if (!initialized)
+            throw new InvalidOperationException("Window must be initialized before running.");
+
         while (running)
         {
             runFrame();
@@ -125,7 +130,7 @@ public class SDLWindow : IWindow
             return;
 
         handleSdlEvents();
-        Update?.Invoke();
+        Update.Invoke();
     }
 
     public void Close()
