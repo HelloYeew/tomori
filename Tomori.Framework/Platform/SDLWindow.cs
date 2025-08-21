@@ -151,7 +151,7 @@ public class SDLWindow : IWindow
             switch ((EventType)sdlEvent.Type)
             {
                 case EventType.Quit:
-                    ExitRequested?.Invoke();
+                    ExitRequested.Invoke();
                     running = false;
                     break;
 
