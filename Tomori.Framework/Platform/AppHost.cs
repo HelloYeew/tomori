@@ -7,8 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Tomori.Framework.Extensions.ExceptionExtensions;
 using Tomori.Framework.Extensions.IEnumerableExtensions;
+using Tomori.Framework.Graphics.Rendering;
 using Tomori.Framework.Logging;
 
 namespace Tomori.Framework.Platform;
@@ -16,6 +19,7 @@ namespace Tomori.Framework.Platform;
 public abstract class AppHost : IDisposable
 {
     public IWindow Window { get; private set; }
+    public IRenderer Renderer { get; private set; }
 
     [NotNull]
     public HostOptions Options { get; private set; }
@@ -112,6 +116,12 @@ public abstract class AppHost : IDisposable
     /// <returns>An instance of <see cref="IWindow"/> that represents the game window.</returns>
     protected abstract IWindow CreateWindow();
 
+    /// <summary>
+    /// Create the renderer for the host.
+    /// </summary>
+    /// <returns>An instance of <see cref="IRenderer"/> that represents the renderer.</returns>
+    protected abstract IRenderer CreateRenderer();
+
     private static readonly SemaphoreSlim host_running_mutex = new SemaphoreSlim(1);
 
     protected virtual void SetupForRun()
@@ -134,6 +144,9 @@ public abstract class AppHost : IDisposable
                 return;
             }
 
+            AppDomain.CurrentDomain.UnhandledException += unhandledExceptionHandler;
+            TaskScheduler.UnobservedTaskException += unobservedTaskExceptionHandler;
+
             Storage = app.CreateStorage(this, GetDefaultAppStorage());
 
             Logger.AppIdentifier = Name;
@@ -152,6 +165,9 @@ public abstract class AppHost : IDisposable
             Window.Title = Options.FriendlyAppName;
             Window.Initialize();
             Window.Create();
+
+            SetupRenderer();
+
             Window.Run();
 
             try
@@ -178,6 +194,26 @@ public abstract class AppHost : IDisposable
         }
     }
 
+    protected virtual void SetupRenderer()
+    {
+        Renderer = CreateRenderer();
+        Renderer.Initialize(Window.GraphicsSurface);
+    }
+
+    private void unhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
+    {
+        var exception = (Exception)args.ExceptionObject;
+        Logger.Error("An unhandled exception occurred in the application.", exception);
+        // TODO: abort execution from exception
+    }
+
+    private void unobservedTaskExceptionHandler(object sender, UnobservedTaskExceptionEventArgs args)
+    {
+        var exception = args.Exception.AsSingular();
+        Logger.Error("An unobserved task exception occurred in the application.", exception);
+        // TODO: abort execution from exception
+    }
+
     private bool isDisposed;
 
     protected virtual void Dispose(bool disposing)
@@ -186,6 +222,9 @@ public abstract class AppHost : IDisposable
             return;
 
         isDisposed = true;
+
+        AppDomain.CurrentDomain.UnhandledException -= unhandledExceptionHandler;
+        TaskScheduler.UnobservedTaskException -= unobservedTaskExceptionHandler;
 
         Logger.Shutdown();
     }

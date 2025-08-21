@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using Tomori.Framework.Extensions;
+using Tomori.Framework.Graphics.Rendering;
 using Tomori.Framework.Logging;
 
 namespace Tomori.Framework.Platform;
@@ -32,6 +33,8 @@ public class DesktopAppHost : AppHost
     public override Storage GetStorage(string path) => new DesktopStorage(path, this);
 
     protected override IWindow CreateWindow() => new DesktopWindow();
+
+    protected override IRenderer CreateRenderer() => new GLRenderer();
 
     public override bool OpenFileExternally(string filename)
     {

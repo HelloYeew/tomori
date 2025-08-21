@@ -4,14 +4,15 @@
 #nullable disable
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Silk.NET.OpenGL;
 using Silk.NET.SDL;
 using Tomori.Framework.Logging;
-using Color = System.Drawing.Color;
 using Version = Silk.NET.SDL.Version;
 
 namespace Tomori.Framework.Platform;
 
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 public class SDLWindow : IWindow
 {
     // TODO: OpenGL need to be moved to a separate class i.e. IRenderer since we want to support other renderers in the future (Vulkan, DirectX, etc.)
@@ -20,6 +21,8 @@ public class SDLWindow : IWindow
     private static GL gl;
     private static unsafe void* glContext;
     private static unsafe Window* window;
+
+    private IGraphicsSurface graphicsSurface = new SDLGraphicsSurface();
 
     private bool initialized;
     private bool running;
@@ -41,6 +44,8 @@ public class SDLWindow : IWindow
         set => setResizable(value);
     }
 
+    public IGraphicsSurface GraphicsSurface => graphicsSurface;
+
     public event Action Update = delegate { };
     public event Action Suspended = delegate { };
     public event Action Resumed = delegate { };
@@ -57,12 +62,12 @@ public class SDLWindow : IWindow
         byte* sdlRevision = sdl.GetRevision();
         byte* videoDriver = sdl.GetCurrentVideoDriver();
 
-        Logger.Verbose("SDL initialized");
+        Logger.Verbose("🪟 SDL initialized");
         Logger.Verbose($"SDL Version: {sdlVersion.Major}.{sdlVersion.Minor}.{sdlVersion.Patch}");
         Logger.Verbose($"SDL Revision: {new string((sbyte*)sdlRevision)}");
         Logger.Verbose($"SDL Video Driver: {new string((sbyte*)videoDriver)}");
 
-        windowFlags = WindowFlags.Opengl | WindowFlags.AllowHighdpi;
+        initialized = true;
     }
 
     public unsafe void Create()
@@ -99,14 +104,18 @@ public class SDLWindow : IWindow
 
         Logger.Verbose("SDL window created successfully");
 
+        // TODO: Remove this line after the renderer is moved to a separate class
         gl = GL.GetApi(proc => (nint)sdl.GLGetProcAddress(proc));
-        gl.ClearColor(Color.DarkBlue);
+        graphicsSurface.GetFunctionAddress = proc => (nint)sdl.GLGetProcAddress(proc);
 
         running = true;
     }
 
     public void Run()
     {
+        if (!initialized)
+            throw new InvalidOperationException("Window must be initialized before running.");
+
         while (running)
         {
             runFrame();
@@ -121,7 +130,7 @@ public class SDLWindow : IWindow
             return;
 
         handleSdlEvents();
-        Update?.Invoke();
+        Update.Invoke();
     }
 
     public void Close()
@@ -142,7 +151,7 @@ public class SDLWindow : IWindow
             switch ((EventType)sdlEvent.Type)
             {
                 case EventType.Quit:
-                    ExitRequested?.Invoke();
+                    ExitRequested.Invoke();
                     running = false;
                     break;
 

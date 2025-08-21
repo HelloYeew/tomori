@@ -18,6 +18,12 @@ public interface IWindow : IDisposable
     bool Resizable { get; set; }
 
     /// <summary>
+    /// The graphic surface associated with this window to render graphics to.
+    /// This is a value that the graphic API will use to render graphics to the window.
+    /// </summary>
+    IGraphicsSurface GraphicsSurface { get; }
+
+    /// <summary>
     /// Initialize all necessary parts for the window.
     /// This needs to be called before any function that interacts with the window.
     /// </summary>
