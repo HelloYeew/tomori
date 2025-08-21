@@ -1,3 +1,7 @@
+Moved to one function of [sakura](https://github.com/HelloYeew/sakura)
+
+---------
+
 # Tomori Framework
 
 A graphic framework for making basic UI application and 2D game (right now) target to support as many platforms as possible. Backed by .NET.
